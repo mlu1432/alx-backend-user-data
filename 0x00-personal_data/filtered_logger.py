@@ -87,28 +87,61 @@ def get_logger() -> Logger:
 def get_db() -> MySQLConnection:
     """
     Returns a MySQL connection object using credentials stored in
-    environment variables or via UNIX socket.
+    environment variables.
 
-    If PERSONAL_DATA_DB_HOST is set to 'localhost', we connect via
-    UNIX socket.
+    Environment Variables:
+        PERSONAL_DATA_DB_USERNAME: Username for the database (default: "root")
+        PERSONAL_DATA_DB_PASSWORD: Password for the database (default: "")
+        PERSONAL_DATA_DB_HOST: Host for the database (default: "localhost")
+        PERSONAL_DATA_DB_NAME: Name of the database to connect to
+
+    Returns:
+        mysql.connector.connection.MySQLConnection: Database connection object
     """
     username = os.getenv('PERSONAL_DATA_DB_USERNAME', 'root')
     password = os.getenv('PERSONAL_DATA_DB_PASSWORD', '')
     host = os.getenv('PERSONAL_DATA_DB_HOST', 'localhost')
     db_name = os.getenv('PERSONAL_DATA_DB_NAME')
 
-    # Use UNIX socket if connecting to localhost
-    if host == "localhost":
-        return mysql.connector.connect(
-            user=username,
-            password=password,
-            unix_socket='/var/run/mysqld/mysqld.sock',
-            database=db_name
+    return mysql.connector.connect(
+        user=username,
+        password=password,
+        host=host,
+        database=db_name
+    )
+
+
+def main() -> None:
+    """
+    Main function that retrieves all rows from the `users` table, formats
+    the data, and logs it using the configured logger.
+    """
+    # Get the logger instance
+    logger = get_logger()
+
+    # Get database connection
+    db = get_db()
+    cursor = db.cursor()
+
+    # Query to retrieve all users
+    query = ("SELECT name, email, phone, ssn, password, ip, last_login, "
+             "user_agent FROM users;")
+    cursor.execute(query)
+
+    # Retrieve and log each user record
+    for row in cursor.fetchall():
+        name, email, phone, ssn, password, ip, last_login, user_agent = row
+        log_message = (
+            f"name={name}; email={email}; phone={phone}; ssn={ssn}; "
+            f"password={password}; ip={ip}; last_login={last_login}; "
+            f"user_agent={user_agent};"
         )
-    else:
-        return mysql.connector.connect(
-            user=username,
-            password=password,
-            host=host,
-            database=db_name
-        )
+        logger.info(log_message)
+
+    # Close the cursor and the database connection
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
