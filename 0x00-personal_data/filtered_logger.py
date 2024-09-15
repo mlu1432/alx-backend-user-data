@@ -1,66 +1,81 @@
 #!/usr/bin/env python3
 """
-This module contains functions and classes for obfuscating PII in logs
-and managing logger setup with redacted formatting.
+Module for logging and filtering PII data.
 """
 
 import logging
 import re
 from typing import List, Tuple
+from logging import Logger, StreamHandler
 
-# PII fields that should be redacted in logs
-PII_FIELDS: Tuple[str, ...] = ("name", "email", "phone", "ssn", "password")
+# Define the tuple of PII fields that should be redacted
+PII_FIELDS: Tuple[str, ...] = ("name", "email", "ssn", "phone", "password")
 
 
-def filter_datum(fields: List[str], redaction: str, message: str, separator: str) -> str:
+def filter_datum(fields: List[str], redaction: str,
+                 message: str, separator: str) -> str:
     """
-    Obfuscates field values in a log message.
+    Obfuscates the values of specified fields in a log message.
 
     Args:
-        fields (List[str]): List of field names to obfuscate.
-        redaction (str): String to replace field values with.
-        message (str): The log message to process.
-        separator (str): Separator between fields in the log message.
+        fields (List[str]): The list of field names to obfuscate.
+        redaction (str): The string to replace the field value with.
+        message (str): The log message to filter.
+        separator (str): The separator between fields in the log message.
 
     Returns:
-        str: The obfuscated log message.
+        str: The log message with obfuscated values.
     """
-    pattern = r'({}=)([^{}]+)'.format('|'.join(fields), separator)
-    return re.sub(pattern, r'\1{}'.format(redaction), message)
+    for field in fields:
+        message = re.sub(f'{field}=[^{separator}]*',
+                         f'{field}={redaction}', message)
+    return message
 
 
 class RedactingFormatter(logging.Formatter):
-    """ Redacting Formatter class to obfuscate sensitive
-    information in log messages.
-    """
+    """Redacting Formatter class for obfuscating PII fields."""
+
     REDACTION = "***"
     FORMAT = "[HOLBERTON] %(name)s %(levelname)s %(asctime)-15s: %(message)s"
     SEPARATOR = ";"
 
     def __init__(self, fields: List[str]):
-        """Initialize the formatter with the fields to redact."""
+        """
+        Initialize the RedactingFormatter.
+
+        Args:
+            fields (List[str]): List of fields to redact in the log message.
+        """
         super(RedactingFormatter, self).__init__(self.FORMAT)
         self.fields = fields
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format the log record, redacting specified fields."""
-        record.msg = filter_datum(self.fields, self.REDACTION, record.msg, self.SEPARATOR)
-        return super(RedactingFormatter, self).format(record)
+        """
+        Format the log record and redact sensitive information.
+
+        Args:
+            record (logging.LogRecord): The log record to format.
+
+        Returns:
+            str: The formatted log message with sensitive data redacted.
+        """
+        record.msg = filter_datum(self.fields, self.REDACTION,
+                                  record.msg, self.SEPARATOR)
+        return super().format(record)
 
 
-def get_logger() -> logging.Logger:
+def get_logger() -> Logger:
     """
-    Creates a logger that logs up to INFO level with a redacting formatter.
+    Creates and configures a logger to handle sensitive information with
+    a RedactingFormatter for PII fields.
 
     Returns:
-        logging.Logger: A logger with a RedactingFormatter and StreamHandler.
+        logging.Logger: The configured logger object.
     """
     logger = logging.getLogger("user_data")
     logger.setLevel(logging.INFO)
+    handler = StreamHandler()
+    handler.setFormatter(RedactingFormatter(list(PII_FIELDS)))
+    logger.addHandler(handler)
     logger.propagate = False
-
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(RedactingFormatter(fields=PII_FIELDS))
-    logger.addHandler(stream_handler)
-
     return logger
