@@ -1,9 +1,29 @@
-# 0x01. Basic authentication
+# Basic Authentication - Simple API
+- This project is a simple API that implements basic authentication for user management. The API includes features for user creation, authentication, and authorization. Throughout the tasks, you will implement a basic authentication system from scratch.
 
-# Simple API
+# Table of Contents
+- Requirements
+- Project Structure
+- Setup Instructions
+- Running the API
+- API Endpoints
+## Authentication Overview
 
-Simple HTTP API for playing with `User` model.
-
+# Tasks
+- Task 0: Simple-basic-API
+- Task 1: Error handler - Unauthorized
+- Task 2: Error handler - Forbidden
+- Task 3: Auth class
+- Task 4: Define which routes don’t need authentication
+- Task 5: Request validation
+- Task 6: Basic auth
+- Task 7: Basic - Base64 part
+- Task 8: Basic - Base64 decode
+- Task 9: Basic - User credentials
+- Task 10: Basic - User object
+- Task 11: Basic - Overload current_user
+- Task 12: Basic - Allow password with “:”
+- Task 13: Require auth with stars
 
 ## Files
 
