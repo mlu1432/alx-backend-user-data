@@ -49,16 +49,26 @@ def before_request_func():
     Handle all requests before they are processed.
     """
     if auth is None:
-        pass
-    else:
+        return
+
+    # Exclude specific paths from requiring authentication
+    excluded_paths = [
+        '/api/v1/status/', 
+        '/api/v1/unauthorized/', 
+        '/api/v1/forbidden/', 
+        '/api/v1/auth_session/login/'
+    ]
+
+    # If the request path needs authentication
+    if auth.require_auth(request.path, excluded_paths):
+        # Check if both authorization header and session cookie are missing
+        if auth.authorization_header(request) is None and auth.session_cookie(request) is None:
+            abort(401)
+
+        # Check if the user associated with the request is None
         request.current_user = auth.current_user(request)
-        # Check if request path needs authentication
-        excluded_paths = ['/api/v1/status/', '/api/v1/unauthorized/', '/api/v1/forbidden/']
-        if auth.require_auth(request.path, excluded_paths) is True:
-            if auth.authorization_header(request) is None:
-                abort(401)
-            if auth.current_user(request) is None:
-                abort(403)
+        if request.current_user is None:
+            abort(403)
 
 if __name__ == "__main__":
     host = getenv("API_HOST", "0.0.0.0")
