@@ -8,7 +8,8 @@ from flask_cors import CORS
 from os import getenv
 from api.v1.views import app_views
 from api.v1.auth.auth import Auth
-from api.v1.auth.basic_auth import BasicAuth  # Import BasicAuth
+from api.v1.auth.basic_auth import BasicAuth
+from api.v1.auth.session_auth import SessionAuth
 
 app = Flask(__name__)
 app.register_blueprint(app_views)
@@ -22,27 +23,25 @@ auth_type = getenv("AUTH_TYPE", None)
 
 if auth_type == "basic_auth":
     auth = BasicAuth()
+elif auth_type == "session_auth":
+    auth = SessionAuth()
 else:
     auth = Auth()
-
 
 @app.errorhandler(404)
 def not_found(error) -> str:
     """Not found handler"""
     return jsonify({"error": "Not found"}), 404
 
-
 @app.errorhandler(401)
 def unauthorized(error) -> str:
     """Unauthorized error handler"""
     return jsonify({"error": "Unauthorized"}), 401
 
-
 @app.errorhandler(403)
 def forbidden(error) -> str:
     """Forbidden error handler"""
     return jsonify({"error": "Forbidden"}), 403
-
 
 @app.before_request
 def before_request_func():
@@ -60,7 +59,6 @@ def before_request_func():
                 abort(401)
             if auth.current_user(request) is None:
                 abort(403)
-
 
 if __name__ == "__main__":
     host = getenv("API_HOST", "0.0.0.0")
