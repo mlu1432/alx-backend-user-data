@@ -44,30 +44,19 @@ def forbidden(error) -> str:
     return jsonify({"error": "Forbidden"}), 403
 
 @app.before_request
-def before_request_func():
-    """
-    Handle all requests before they are processed.
-    """
+def before_request():
+    """Method to handle all requests before processing"""
     if auth is None:
-        return
-
-    # Exclude specific paths from requiring authentication
-    excluded_paths = [
-        '/api/v1/status/', 
-        '/api/v1/unauthorized/', 
-        '/api/v1/forbidden/', 
-        '/api/v1/auth_session/login/'
-    ]
-
-    # If the request path needs authentication
-    if auth.require_auth(request.path, excluded_paths):
-        # Check if both authorization header and session cookie are missing
+        pass
+    else:
+        request.current_user = auth.current_user(request)
+        excluded_paths = ['/api/v1/status/', '/api/v1/unauthorized/',
+                          '/api/v1/forbidden/', '/api/v1/auth_session/login/']
+        if not auth.require_auth(request.path, excluded_paths):
+            return
         if auth.authorization_header(request) is None and auth.session_cookie(request) is None:
             abort(401)
-
-        # Check if the user associated with the request is None
-        request.current_user = auth.current_user(request)
-        if request.current_user is None:
+        if auth.current_user(request) is None:
             abort(403)
 
 if __name__ == "__main__":
