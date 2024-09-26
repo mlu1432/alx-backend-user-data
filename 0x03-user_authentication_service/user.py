@@ -7,6 +7,7 @@ from sqlalchemy import Column, String, Integer
 
 Base = declarative_base()
 
+
 class User(Base):
     """User model
 
@@ -19,3 +20,11 @@ class User(Base):
     hashed_password = Column(String(250), nullable=False)
     session_id = Column(String(250), nullable=True)
     reset_token = Column(String(250), nullable=True)
+
+
+# This part provide some visible output
+if __name__ == '__main__':
+    print(f"Table name: {User.__tablename__}")
+    print("Columns:")
+    for column in User.__table__.columns:
+        print(f"{column.name}: {column.type}")    
