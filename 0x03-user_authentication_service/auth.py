@@ -3,10 +3,10 @@
 Auth module for user authentication.
 """
 
-
 from db import DB
 from user import User
 import bcrypt
+import uuid
 from typing import TypeVar
 
 
@@ -23,6 +23,15 @@ class Auth:
             password.encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
+
+    def _generate_uuid(self) -> str:
+        """
+        Generate a new UUID.
+
+        Returns:
+            str: A new UUID as a string.
+        """
+        return str(uuid.uuid4())
 
     def register_user(self, email: str, password: str) -> User:
         """Register a new user and save them to the database."""
@@ -59,3 +68,24 @@ class Auth:
             )
         except Exception:
             return False
+
+    def create_session(self, email: str) -> str:
+        """
+        Create a new session for the user identified by the email.
+
+        Args:
+            email (str): The email of the user.
+
+        Returns:
+            str: The generated session ID or None if the user is not found.
+        """
+        try:
+            # Find the user by email
+            user = self._db.find_user_by(email=email)
+            # Generate a new session ID
+            session_id = self._generate_uuid()
+            # Update the user with the new session ID
+            self._db.update_user(user.id, session_id=session_id)
+            return session_id
+        except Exception:
+            return None
