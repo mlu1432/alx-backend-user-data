@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Auth module to manage authentication.
+Auth module for user authentication.
 """
+
 
 from db import DB
 from user import User
@@ -24,29 +25,37 @@ class Auth:
         ).decode('utf-8')
 
     def register_user(self, email: str, password: str) -> User:
-        """
-        Register a new user with the given email and password.
-
-        Args:
-            email (str): The email of the new user.
-            password (str): The password of the new user.
-
-        Returns:
-            User: The newly created user.
-
-        Raises:
-            ValueError: If the user already exists.
-        """
-        # Check if a user with the given email already exists
+        """Register a new user and save them to the database."""
         try:
             user = self._db.find_user_by(email=email)
             if user:
                 raise ValueError(f"User {email} already exists")
         except Exception:
-            # If no user is found, proceed to register the new user
             hashed_password = self._hash_password(password)
             new_user = self._db.add_user(
                 email=email,
                 hashed_password=hashed_password
             )
             return new_user
+
+    def valid_login(self, email: str, password: str) -> bool:
+        """
+        Validate credentials for login.
+
+        Args:
+            email (str): The user's email.
+            password (str): The user's password.
+
+        Returns:
+            bool: True if valid credentials, False otherwise.
+        """
+        try:
+            # Locate the user by email
+            user = self._db.find_user_by(email=email)
+            # Check if the password matches using bcrypt
+            return bcrypt.checkpw(
+                password.encode('utf-8'),
+                user.hashed_password.encode('utf-8')
+            )
+        except Exception:
+            return False
