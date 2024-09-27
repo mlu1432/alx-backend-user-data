@@ -5,6 +5,7 @@ DB module to manage interactions with the database.
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.exc import NoResultFound
 from user import Base, User
 
@@ -61,3 +62,30 @@ class DB:
         if not user:
             raise NoResultFound
         return user
+
+    def update_user(self, user_id: int, **kwargs) -> None:
+        """
+        Update a user's attributes in the database.
+
+        Args:
+            user_id (int): The ID of the user to be updated.
+            **kwargs: Arbitrary keyword arguments representing
+            the attributes to be updated.
+
+        Raises:
+            ValueError: If any of the keys in kwargs do not correspond
+            to valid user attributes.
+        """
+        user = self.find_user_by(id=user_id)
+
+        # List of valid user attributes
+        valid_attributes = ['email', 'hashed_password', 'session_id', 'reset_token']
+
+        # Iterate over the keyword arguments to update user attributes
+        for key, value in kwargs.items():
+            if key not in valid_attributes:
+                raise ValueError(f"{key} is not a valid attribute.")
+            setattr(user, key, value)
+
+        self._session.commit()
+        return None
