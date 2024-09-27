@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""User model definition for the 'users' table """
+"""
+User model definition for a database table named 'users'
+"""
 
 
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, String, Integer
+
 
 Base = declarative_base()
 
 
 class User(Base):
-    """User model
-
-    Represents a user in the database.
+    """
+    SQLAlchemy User model for the 'users' table.
     """
     __tablename__ = 'users'
 
@@ -21,10 +23,3 @@ class User(Base):
     session_id = Column(String(250), nullable=True)
     reset_token = Column(String(250), nullable=True)
 
-
-# This part provide some visible output
-if __name__ == '__main__':
-    print(f"Table name: {User.__tablename__}")
-    print("Columns:")
-    for column in User.__table__.columns:
-        print(f"{column.name}: {column.type}")    

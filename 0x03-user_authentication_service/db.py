@@ -3,10 +3,11 @@
 DB module to manage interactions with the database.
 """
 
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import InvalidRequestError
-from sqlalchemy.exc import NoResultFound
 from user import Base, User
 
 
@@ -22,7 +23,7 @@ class DB:
 
     @property
     def _session(self):
-        """Create and cache session object."""
+        """Memoized session object"""
         if self.__session is None:
             DBSession = sessionmaker(bind=self._engine)
             self.__session = DBSession()
@@ -31,13 +32,10 @@ class DB:
     def add_user(self, email: str, hashed_password: str) -> User:
         """
         Add a new user to the database.
-
-        Args:
-            email (str): The email of the user.
-            hashed_password (str): The hashed password of the user.
-
-        Returns:
-            User: The newly created User object.
+        
+        :param email: The email of the user.
+        :param hashed_password: The hashed password of the user.
+        :return: The created User object.
         """
         new_user = User(email=email, hashed_password=hashed_password)
         self._session.add(new_user)
@@ -46,46 +44,31 @@ class DB:
 
     def find_user_by(self, **kwargs) -> User:
         """
-        Find a user by arbitrary keyword arguments in the database.
-
-        Args:
-            **kwargs: Arbitrary keyword arguments used to filter the user
-            (e.g., email, id).
-
-        Returns:
-            User: The user object that matches the given filters.
-
-        Raises:
-            NoResultFound: If no user is found that matches the given filters
+        Find a user by arbitrary keyword arguments.
+        
+        :param kwargs: Arbitrary keyword arguments for filtering.
+        :return: The User object if found.
+        :raises NoResultFound: If no user is found.
+        :raises InvalidRequestError: If invalid query arguments are passed.
         """
-        user = self._session.query(User).filter_by(**kwargs).first()
-        if not user:
-            raise NoResultFound
-        return user
+        try:
+            return self._session.query(User).filter_by(**kwargs).first()
+        except NoResultFound:
+            raise NoResultFound("No user found with the given parameters.")
+        except InvalidRequestError:
+            raise InvalidRequestError("Invalid query parameters.")
 
     def update_user(self, user_id: int, **kwargs) -> None:
         """
-        Update a user's attributes in the database.
-
-        Args:
-            user_id (int): The ID of the user to be updated.
-            **kwargs: Arbitrary keyword arguments representing
-            the attributes to be updated.
-
-        Raises:
-            ValueError: If any of the keys in kwargs do not correspond
-            to valid user attributes.
+        Update a user's attributes.
+        
+        :param user_id: The ID of the user to update.
+        :param kwargs: Arbitrary keyword arguments for updating the user.
+        :raises ValueError: If an invalid attribute is passed.
         """
         user = self.find_user_by(id=user_id)
-
-        # List of valid user attributes
-        valid_attributes = ['email', 'hashed_password', 'session_id', 'reset_token']
-
-        # Iterate over the keyword arguments to update user attributes
         for key, value in kwargs.items():
-            if key not in valid_attributes:
-                raise ValueError(f"{key} is not a valid attribute.")
+            if not hasattr(user, key):
+                raise ValueError(f"Invalid attribute: {key}")
             setattr(user, key, value)
-
         self._session.commit()
-        return None
